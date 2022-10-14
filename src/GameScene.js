@@ -74,6 +74,8 @@ export class GameScene extends Scene {
   // добавить метод прослушивания событий таймера
 
   createSounds() {
+
+    // Создать класс-файбер для звуков с методами проигрывания анимаций
     this.sounds = {
       theme: this.sound.add('theme'),
       complete: this.sound.add('complete'),

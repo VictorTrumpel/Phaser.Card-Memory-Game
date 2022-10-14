@@ -1,5 +1,6 @@
 import { GameObjects } from 'phaser'
 
+// сделать промисификацию для всех методов анимации
 export class Card extends GameObjects.Sprite {
   isOpened = false
   value = null
@@ -21,6 +22,7 @@ export class Card extends GameObjects.Sprite {
     this.setPosition(-this.width, -this.height)
   }
 
+  // сделать промисификацию для метода move
   move(params) {
     this.scene.tweens.add({
       targets: this,
