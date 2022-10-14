@@ -17,6 +17,7 @@ import timeout from './assets/sounds/timeout.mp3'
 
 import gameSettings from './gameSettings'
 
+// к сцене применить паттерн Singleton
 export class GameScene extends Scene {
 
   openedCards = []
@@ -29,6 +30,9 @@ export class GameScene extends Scene {
 
   timeOutText = null
 
+  // Создать отдельный файбер для таймаута
+  // который будет создавать события для, которые можно будет прослушивать
+  // Сцена будет слушать события
   timeout = gameSettings.timeout
 
   constructor() {
@@ -36,6 +40,8 @@ export class GameScene extends Scene {
   }
 
   preload() {
+    // организовать загрузку ассетов через массив ресурсов
+    // Организовать объект ресурсов ключ - путь к ресурсу
     this.load.image('bg', background)
 	  this.load.image('card', card)
 	  this.load.image('card1', card1)
@@ -64,6 +70,8 @@ export class GameScene extends Scene {
       loop: true
     })
   }
+
+  // добавить метод прослушивания событий таймера
 
   createSounds() {
     this.sounds = {

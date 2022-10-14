@@ -7,7 +7,7 @@ export class Card extends GameObjects.Sprite {
 
   constructor(scene, value) {
     super(scene, 0, 0, 'card')
-    this.scene = scene
+    this.scene = scene // получать инстанс сцены через new GameScene()
     this.value = value
 
     this.scene.add.existing(this)
