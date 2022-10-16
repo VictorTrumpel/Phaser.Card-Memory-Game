@@ -1,19 +1,4 @@
 import { Scene } from 'phaser'
-import { Card } from './Card'
-import background from './assets/background.png'
-
-import card from './assets/card.png'
-import card1 from './assets/card1.png'
-import card2 from './assets/card2.png'
-import card3 from './assets/card3.png'
-import card4 from './assets/card4.png'
-import card5 from './assets/card5.png'
-
-import theme from './assets/sounds/theme.mp3'
-import complete from './assets/sounds/complete.mp3'
-import cardSound from './assets/sounds/card.mp3'
-import success from './assets/sounds/success.mp3'
-import timeout from './assets/sounds/timeout.mp3'
 
 import gameSettings from './gameSettings'
 
@@ -26,125 +11,91 @@ export class GameScene extends Scene {
 
   cards = []
 
-  sounds = {}
+  finished = false
 
-  timeOutText = null
-
-  // Создать отдельный файбер для таймаута
-  // который будет создавать события для, которые можно будет прослушивать
-  // Сцена будет слушать события
-  timeout = gameSettings.timeout
+  onAssetsLoad = () => null
 
   constructor() {
-    super('Game')
-  }
-
-  preload() {
-    // организовать загрузку ассетов через массив ресурсов
-    // Организовать объект ресурсов ключ - путь к ресурсу
-    this.load.image('bg', background)
-	  this.load.image('card', card)
-	  this.load.image('card1', card1)
-	  this.load.image('card2', card2)
-	  this.load.image('card3', card3)
-	  this.load.image('card4', card4)
-	  this.load.image('card5', card5)
-
-    this.load.audio('theme', theme)
-    this.load.audio('complete', complete)
-    this.load.audio('cardSound', cardSound)
-    this.load.audio('success', success)
-    this.load.audio('timeout', timeout)
-  }
-
-  onTimerTick() {
-    this.timeout -= 1
-    this.timeOutText.setText(`Time: ${this.timeout}`)
-  }
-
-  createTimer() {
-    this.time.addEvent({
-      delay: 1000,
-      callback: this.onTimerTick,
-      callbackScope: this,
-      loop: true
-    })
-  }
-
-  // добавить метод прослушивания событий таймера
-
-  createSounds() {
-
-    // Создать класс-файбер для звуков с методами проигрывания анимаций
-    this.sounds = {
-      theme: this.sound.add('theme'),
-      complete: this.sound.add('complete'),
-      card: this.sound.add('cardSound'),
-      success: this.sound.add('success'),
-      timeout: this.sound.add('timeout')
+    if (GameScene.exists) {
+      return GameScene.instance
     }
+    super('Game')
 
-    // this.sounds.theme.play({ volume: 0.01 })    
+    GameScene.instance = this
+    GameScene.exists = true
   }
 
   create() {
-    this.createBackground()
-    this.createSounds()
-    this.createText()
-    this.createCards()
-    this.createTimer()
+    this.add.sprite(0, 0, 'bg').setOrigin(0, 0)
+    this.onAssetsLoad()
+    
+    this.initEvents()
+  }
+
+  async start() {
+    await this.showCards()
+    this.timer.start()
+  }
+
+  addCard(card) {
+    this.cards.push(card)
+  }
+
+  async restart() {
+    await this.fadeCards()
+    this.finished = false
+    this.timer.reset()
+    this.cards.forEach(card => card.setPosition(-100, -100))
+    this.openedCards = []
+    this.overlapsValues = []
     this.start()
   }
 
-  start() {
-    this.initCards()
-    this.showCards()
+  async showCards() {
+    const positions = this.getCardsPositions()
+
+    Phaser.Utils.Array.Shuffle(this.cards)
+
+    let idx = 0
+    for (const card of this.cards) {
+      this.add.existing(card) // вставляем карту на сцену
+      card.depth = idx // для того, что бы последующие карты отображались поверх других 
+      const position = positions[idx] // получаем позицию карты
+      await card.move(position)
+      idx += 1
+    }
   }
 
-  createCards() {
-    gameSettings.cards.forEach((value) => {
-      this.cards.push(new Card(this, value))
-      this.cards.push(new Card(this, value))  
-    })
+  async fadeCards() {
+    for (const card of this.cards) {
+      card.close()
+      await card.move({ x: 1000, y: 1000 })
+    }
+  }
 
-    // паттерн обсервебле
-    // вешаем один обработчик события на всю сцену вместо того, что бы 
-    // вешать обработчик на каждую карту
+  finishGame() {
+    this.finished = true
+    this.timer.shutdown()
+
+    if (this.overlapsValues.length === gameSettings.cards.length) {
+      this.events.emit('victory')
+      return
+    }
+    this.events.emit('loose')
+  }
+
+  initEvents() {
     this.input.on('gameobjectdown', this.onCardClicked, this)
-  }
-
-  initCards() {
-    const posistions = this.getCardsPositions()
-    this.cards.forEach(card => {
-      card.init(posistions.pop())
-    })
-  }
-
-  showCards() {
-    this.cards.forEach((card, idx) => {
-      card.depth = idx
-      card.move({
-        x: card.position.x,
-        y: card.position.y
-      })
-    })
-  }
-
-  createText() {
-    this.timeOutText = this.add.text(10, 330, `Time: ${this.timeout}`, {
-      font: '36px Arial',
-      fill: '#ffffff'
-    })
+    this.timer.events.on('timeout', this.finishGame, this)
   }
 
   createBackground() {
     this.add.sprite(0, 0, 'bg').setOrigin(0, 0)
   } 
 
-  onCardClicked(pointer, card) {
+  onCardClicked(_, card) {
+    if (this.finished) return
     if (card.isOpened) return
-
-    // this.sounds.card.play({ volume: 0.01 })
 
     card.open()
 
@@ -155,21 +106,19 @@ export class GameScene extends Scene {
     const firstCard = this.openedCards[0]
     const secondCard = this.openedCards[1]
 
-    if (firstCard.value === secondCard.value) {
-      this.overlapsValues.push(firstCard.value)
-      this.openedCards = []
-
-      // this.sounds.success.play({ volume: 0.01 })
-      // Если все пары открыты - перезапуск игры
-      if (this.overlapsValues.length === gameSettings.cards.length) {
-        this.start()
-        this.sounds.complete.play({ volume: 0.01 })
-      }
-
+    if (firstCard.value !== secondCard.value) {
+      this.openedCards.shift().close()
       return
     }
 
-    this.openedCards.shift().close()
+    this.overlapsValues.push(firstCard.value)
+    this.openedCards = []
+    
+    if (this.overlapsValues.length === gameSettings.cards.length) {
+      this.finishGame()
+    }
+
+    return
   }
 
   getCardsPositions() {
@@ -202,6 +151,6 @@ export class GameScene extends Scene {
       })
     })
 
-    return Phaser.Utils.Array.Shuffle(positions)
+    return positions
   }
 }

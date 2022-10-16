@@ -1,19 +1,26 @@
 import { GameObjects } from 'phaser'
+import { GameScene } from './GameScene'
 
 // сделать промисификацию для всех методов анимации
 export class Card extends GameObjects.Sprite {
   isOpened = false
+
+  scene = new GameScene()
+
+  position = { x: 0, y: 0 }
   value = null
-  scene = null
 
-  constructor(scene, value) {
-    super(scene, 0, 0, 'card')
-    this.scene = scene // получать инстанс сцены через new GameScene()
+  constructor({
+    value = null,
+    x = 0,
+    y = 0,
+  }) {    
+    super(new GameScene(), x, y, 'card')
+
     this.value = value
+    this.position = { x, y }
 
-    this.scene.add.existing(this)
-
-    this.setInteractive()
+    this.setInteractive() // делает карту кликабельной
   }
 
   init(position) {
@@ -22,16 +29,17 @@ export class Card extends GameObjects.Sprite {
     this.setPosition(-this.width, -this.height)
   }
 
-  // сделать промисификацию для метода move
-  move(params) {
-    this.scene.tweens.add({
-      targets: this,
-      ease: 'Linear',
-      x: params.x,
-      y: params.y,
-      duration: 250
+  move({ x = 0, y = 0}) {
+    return new Promise((res) => {
+      this.scene.tweens.add({
+        targets: this,
+        ease: 'Linear',
+        x,
+        y,
+        duration: 250,
+        onComplete: res
+      })
     })
-    // this.setPosition(params.x, params.y)
   }
 
   flip() {

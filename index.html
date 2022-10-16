@@ -2,12 +2,39 @@
 <html>
   <style>
     body {
+      font-family: sans-serif;
+      position: absolute;
       padding: 0;
       margin: 0;
     }
 
     canvas {
       width: 100%;
+    }
+
+    .dialog-menu {
+      position: absolute;
+      left: 50%;
+      top: 20%;
+      width: 10rem;
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      background: lightblue;
+      border-radius: 0.8rem;
+      padding: 1.6rem;
+      transform: translateX(-5rem);
+    }
+
+    .dialog-menu h5 {
+      text-align: center;
+    }
+
+    .timer-window {
+      position: absolute;
+      top: 50%;
+      font-size: 22px;
+      color: white;
     }
   </style>
   <head>
